@@ -730,6 +730,7 @@ function fillTpl(tpl,b){
 }
 function waTo(phone,text){var d=String(phone||'').replace(/\D/g,'');if(d.indexOf('00')===0)d=d.slice(2);if(d.charAt(0)==='0')d='966'+d.slice(1);return 'https://wa.me/'+d+'?text='+encodeURIComponent(text)}
 function oBookings(){
+  if(OWNER_ERR)return '<div class="tbl"><div class="empty"><p class="msg">ما قدرنا نجيب الحجوزات ('+esc(OWNER_ERR)+'). سجّل خروج وادخل مرة ثانية.</p></div></div>';
   if(OWNER_BOOKINGS===null)return '<div class="tbl"><div class="empty"><span class="spin" style="display:inline-block"></span> نحمّل الحجوزات…</div></div>';
   if(!OWNER_BOOKINGS.length)return '<div class="tbl"><div class="empty">ما فيه حجوزات مباشرة للحين. أول ما يحجز ضيف من الموقع بيظهر هنا، وتنقفل أيامه، ويطلع لك سجل قسمة جاهز.</div></div>';
   var list=OWNER_BOOKINGS.map(docToBk);
@@ -944,7 +945,14 @@ document.addEventListener('click',function(e){
   if(tg.id==='homeBtn'){go('home');return}
   if(tg.id==='langBtn'){L=L==='en'?'ar':'en';try{localStorage.setItem('sukna-lang',L)}catch(x){}render();return}
   if(tg.id==='waFab'){openWa();return}
-  if(tg.id==='googleIn'){var lm=document.getElementById('loginMsg');auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(e){if(lm)lm.textContent='ما تم الدخول: '+(e.code||e.message)});return}
+  if(tg.id==='googleIn'){var lm=document.getElementById('loginMsg'),prov=new firebase.auth.GoogleAuthProvider();prov.setCustomParameters({prompt:'select_account',login_hint:OWNER_EMAIL});
+    if(lm)lm.textContent='';tg.disabled=true;tg.innerHTML='<span class="spin"></span> جاري الدخول…';
+    auth.signInWithPopup(prov).catch(function(e){
+      var c=e.code||'';
+      if(c==='auth/popup-blocked'||c==='auth/operation-not-supported-in-this-environment'||c==='auth/cancelled-popup-request'){return auth.signInWithRedirect(prov)}
+      tg.disabled=false;tg.textContent='الدخول بحساب Google';
+      if(lm)lm.textContent=c==='auth/popup-closed-by-user'?'سكّرت نافذة الدخول قبل ما تكمل. حاول مرة ثانية.':c==='auth/web-storage-unsupported'||c==='auth/internal-error'?'المتصفح هذا ما يدعم الدخول. افتح الموقع في Safari أو Chrome وحاول.':'ما تم الدخول: '+(c||e.message);
+    });return}
   if(tg.id==='signOut'){auth.signOut();OWNER_BOOKINGS=null;go('home');return}
   if(d.copy){var txt=d.copy,bt=tg;function ok(){bt.textContent='تم النسخ';setTimeout(function(){bt.textContent='نسخ'},1500)}try{navigator.clipboard.writeText(txt).then(ok,function(){bt.textContent='انسخه يدوياً'})}catch(x){bt.textContent='انسخه يدوياً'}return}
   if(tg.id==='waClose'){layer.innerHTML='';return}
@@ -1025,7 +1033,7 @@ document.addEventListener('submit',function(e){
 });
 
 /* ================= live data ================= */
-var db=null,auth=null,OWNER_BOOKINGS=null,OWNER_COUPONS=null,unsubOwner=null;
+var db=null,auth=null,OWNER_BOOKINGS=null,OWNER_COUPONS=null,unsubOwner=null,OWNER_ERR='';
 try{firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();auth=firebase.auth()}catch(e){console.warn('Firebase unavailable',e)}
 function applyPrices(j){
   var last=TODAY;
@@ -1051,16 +1059,18 @@ function startLive(){
     snap.forEach(function(d){var x=d.data();if(BY[x.unit])BY[x.unit].taken[x.date]=x.code||1});
     if(LOADED)rerenderSoft();
   },function(e){console.warn('blocks',e)})}
-  if(auth){auth.onAuthStateChanged(function(user){
+  if(auth){auth.getRedirectResult().catch(function(e){console.warn('redirect',e)});
+  auth.onAuthStateChanged(function(user){
     S.owner=!!(user&&user.email===OWNER_EMAIL);S.ownerUser=user||null;
     if(unsubOwner){unsubOwner();unsubOwner=null}
     if(S.owner){
+      OWNER_ERR='';
       unsubOwner=db.collection('bookings').orderBy('createdAt','desc').limit(200).onSnapshot(function(snap){
         OWNER_BOOKINGS=[];snap.forEach(function(d){OWNER_BOOKINGS.push(d.data())});if(S.view==='owner')render();
-      },function(e){console.warn('owner bookings',e)});
-      db.collection('coupons').get().then(function(snap){OWNER_COUPONS=[];snap.forEach(function(d){OWNER_COUPONS.push(d.data())});if(S.view==='owner')render()});
-      if(S.view==='login')go('owner');
-    }else if(S.view==='owner')render();
+      },function(e){console.warn('owner bookings',e);OWNER_ERR=e.code||e.message;OWNER_BOOKINGS=[];if(S.view==='owner')render()});
+      db.collection('coupons').get().then(function(snap){OWNER_COUPONS=[];snap.forEach(function(d){OWNER_COUPONS.push(d.data())});if(S.view==='owner')render()}).catch(function(e){OWNER_COUPONS=[]});
+    }
+    if(S.view==='owner'||S.view==='login')go('owner');
   })}
 }
 try{new MutationObserver(function(){document.documentElement.classList.toggle('modal-open',!!layer.firstElementChild)}).observe(layer,{childList:true})}catch(e){}
