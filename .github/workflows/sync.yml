@@ -1,0 +1,38 @@
+name: Sync calendars
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Sync calendars and prices
+        env:
+          ICAL_HOMEY: ${{ secrets.ICAL_HOMEY }}
+          ICAL_WAHA: ${{ secrets.ICAL_WAHA }}
+          ICAL_OLIVE: ${{ secrets.ICAL_OLIVE }}
+          ICAL_STUDIO: ${{ secrets.ICAL_STUDIO }}
+          PRICELABS_API_KEY: ${{ secrets.PRICELABS_API_KEY }}
+        run: node scripts/sync.mjs
+      - name: Commit changes
+        run: |
+          git config user.name "sukna-bot"
+          git config user.email "sukna-bot@users.noreply.github.com"
+          git add data ical
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Sync calendars"
+          git push
