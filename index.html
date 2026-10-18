@@ -218,8 +218,10 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .check input{margin-top:5px}
 
 /* modal */
-.modal{position:fixed;inset:0;z-index:50;background:rgba(10,14,12,.55);display:grid;place-items:center;padding:20px}
-.sheet{background:var(--surface);color:var(--ink);border-radius:20px;max-width:420px;width:100%;padding:24px;display:grid;gap:14px;box-shadow:var(--shadow)}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(10,14,12,.55);display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:calc(env(safe-area-inset-top,0px) + 24px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 40px) max(16px,env(safe-area-inset-left,0px))}
+@media (min-height:760px) and (min-width:700px){.modal{align-items:center}}
+html.modal-open,html.modal-open body{overflow:hidden;overscroll-behavior:none}
+.sheet{background:var(--surface);color:var(--ink);border-radius:20px;max-width:420px;width:100%;padding:24px;display:grid;gap:14px;box-shadow:var(--shadow);margin-block:auto;flex:none}
 .sheet h3{font-size:20px}
 .pp{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
 .pp span{background:#FFC439;color:#111;padding:4px 10px;border-radius:8px;font-family:var(--body);font-size:15px}
@@ -1061,6 +1063,7 @@ function startLive(){
     }else if(S.view==='owner')render();
   })}
 }
+try{new MutationObserver(function(){document.documentElement.classList.toggle('modal-open',!!layer.firstElementChild)}).observe(layer,{childList:true})}catch(e){}
 var mb=document.getElementById('modeBar');
 if(PAYPAL_MODE!=='live'){mb.hidden=false}
 function modeBarText(){mb.textContent=t('وضع التجربة: الدفع هنا وهمي ولا ينخصم أي مبلغ حقيقي','Test mode: payments here are not real')}
