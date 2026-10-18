@@ -493,6 +493,7 @@ var nowD=new Date();var TODAY=nowD.getFullYear()+'-'+String(nowD.getMonth()+1).p
 var REAL_TODAY=TODAY;var LAST=TODAY,MINM=0,MAXM=0;
 function loc(){return L==='en'?'en-GB':'ar-SA-u-ca-gregory-nu-latn'}
 function fmt(s,o){return new Intl.DateTimeFormat(loc(),Object.assign({timeZone:'UTC'},o)).format(new Date(typeof s==='string'?ms(s):s))}
+function fmtAr(s){return new Intl.DateTimeFormat('ar-SA-u-ca-gregory-nu-latn',{day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(ms(s)))}
 function fL(s){return fmt(s,{weekday:'long',day:'numeric',month:'long'})}
 function fS(s){return fmt(s,{day:'numeric',month:'short'})}
 function fM(d){return fmt(d,{month:'long',year:'numeric'})}
