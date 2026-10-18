@@ -127,7 +127,8 @@ button.field{border:0;background:transparent;text-align:start;cursor:pointer;fon
 .why p{margin:0;color:var(--muted);font-size:14px}
 .ico{width:22px;height:22px;stroke:var(--palm);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
 
-footer{margin-top:40px;border-top:1px solid var(--line);padding-block:26px;color:var(--muted);font-size:13px}
+footer{margin-top:40px;border-top:1px solid var(--line);padding-block:26px calc(26px + 84px + env(safe-area-inset-bottom,0px));color:var(--muted);font-size:13px}
+.owner-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:10px 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);cursor:pointer;position:relative;z-index:1}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
 /* unit page */
@@ -534,7 +535,7 @@ function imgBox(u,i){return '<img src="'+u.imgs[i||0]+'" alt="'+esc(tx(u.name))+
 function hdr(){return '<div class="wrap"><button class="brand" id="homeBtn" type="button" aria-label="'+t('الرئيسية','Home')+'"><span class="brand-mark">س</span><span><span class="brand-name">'+t('سُكنى','Sukna')+'</span><span class="brand-sub">'+t('بيوت للإيجار اليومي · المدينة المنورة','Short stays · Madinah')+'</span></span></button>'+
  '<nav><button class="link-btn" type="button" data-go="home" data-anchor="units">'+t('الوحدات','Stays')+'</button><button class="lang-btn" type="button" id="langBtn" lang="'+(L==='en'?'ar':'en')+'">'+(L==='en'?'العربية':'English')+'</button></nav></div>'}
 function ftr(){return '<div class="wrap"><div style="display:grid;gap:4px"><span>'+t('سُكنى · المدينة المنورة · احجز مباشرة بدون رسوم منصات','Sukna · Madinah · Book direct with no platform fees')+'</span><span class="lic">'+ic('badge')+t('وحدات مرخّصة من وزارة السياحة','Units licensed by the Saudi Ministry of Tourism')+'</span></div>'+
- '<button class="link-btn" type="button" data-go="owner" style="font-size:12px;padding:2px 6px">'+t('دخول المالك','Owner login')+'</button></div>'}
+ '<button class="owner-link" type="button" data-go="owner">'+ic('lock')+' '+t('دخول المالك','Owner login')+'</button></div>'}
 
 /* ================= home ================= */
 function vHome(){
@@ -1078,6 +1079,8 @@ var mb=document.getElementById('modeBar');
 if(PAYPAL_MODE!=='live'){mb.hidden=false}
 function modeBarText(){mb.textContent=t('وضع التجربة: الدفع هنا وهمي ولا ينخصم أي مبلغ حقيقي','Test mode: payments here are not real')}
 modeBarText();
+if(location.hash==='#owner')S.view='owner';
+window.addEventListener('hashchange',function(){if(location.hash==='#owner')go('owner')});
 render();
 startLive();
 })();
