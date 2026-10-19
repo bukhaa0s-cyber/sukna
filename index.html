@@ -918,6 +918,38 @@ function openPay(data){
     b.render('#pp-buttons');
   }).catch(function(){payStatus(t('ما قدرنا نفتح PayPal. تأكد من الإنترنت وحاول مرة ثانية.','Could not load PayPal. Check your connection and try again.'),true)});
 }
+var NOTIFY_URL='https://formsubmit.co/ajax/'+OWNER_EMAIL;
+function notifyOwner(doc,u,qq,conflict){
+  try{
+    var ex=qq.ex.length?qq.ex.map(function(x){return x.ar+(x.sar?' ('+x.sar+' ر.س)':' (مجاناً)')}).join('، '):'بدون';
+    var waNum=String(doc.phone||'').replace(/\D/g,'').replace(/^00/,'').replace(/^0/,'966');
+    var body={
+      _subject:(doc.mode==='sandbox'?'[تجربة] ':'')+(conflict?'⚠️ تعارض · ':'')+'حجز جديد '+doc.code+' · '+u.name.ar+' · '+fmtAr(doc.a)+' – '+fmtAr(doc.b),
+      _template:'table',_captcha:'false',
+      'رقم الحجز':doc.code,
+      'الوحدة':u.name.ar,
+      'الوصول':fmtAr(doc.a)+' ('+doc.a+')',
+      'المغادرة':fmtAr(doc.b)+' ('+doc.b+')',
+      'عدد الليالي':String(qq.n),
+      'عدد الضيوف':String(doc.g),
+      'اسم الضيف':doc.name,
+      'جوال الضيف':doc.phone,
+      'واتساب الضيف':waNum?'https://wa.me/'+waNum:'',
+      'إيميل الضيف':doc.email,
+      'وقت الوصول المتوقع':doc.eta||'',
+      'الإضافات':ex,
+      'ملاحظات الضيف':doc.note||'لا يوجد',
+      'الخصم':qq.pct?qq.label+' ('+qq.pct+'% = '+money(qq.disc)+' ر.س)':'بدون',
+      'الإجمالي':money(qq.total)+' ر.س',
+      'المدفوع عبر PayPal':'$'+(doc.paidUsd!=null?Number(doc.paidUsd).toFixed(2):usd(qq.total))+' · '+(doc.pm==='card'?'بطاقة':'حساب PayPal'),
+      'رقم عملية PayPal':doc.paypalCaptureId||'',
+      'لغة الضيف':doc.lang==='en'?'English':'عربي',
+      'الحالة':conflict?'تعارض: بعض الليالي انحجزت بنفس اللحظة، تواصل مع الضيف':(doc.mode==='sandbox'?'حجز تجريبي':'مدفوع ومؤكد'),
+      'لوحة المالك':location.origin+location.pathname+'#owner'
+    };
+    fetch(NOTIFY_URL,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify(body),keepalive:true}).catch(function(e){console.warn('notify',e)});
+  }catch(e){console.warn('notify',e)}
+}
 function saveBooking(det,ctx){
   var u=ctx.u,qq=ctx.qq,data=ctx.data,cap=null;
   try{cap=det.purchase_units[0].payments.captures[0]}catch(e){}
@@ -928,6 +960,7 @@ function saveBooking(det,ctx){
     payerEmail:(det.payer&&det.payer.email_address)||'',mode:PAYPAL_MODE,status:'paid'};
   var bk={code:ctx.code,unit:u.id,a:S.a,b:S.b,g:S.g,q:qq,ex:Object.assign({},S.co.extras),name:data.name,phone:data.phone,email:data.email,eta:data.eta,pm:ctx.pm,lang:L};
   function done(conflict){
+    notifyOwner(doc,u,qq,!!conflict);
     try{var mine=JSON.parse(localStorage.getItem('sukna-my-bookings')||'[]');mine.unshift(bk);localStorage.setItem('sukna-my-bookings',JSON.stringify(mine.slice(0,10)))}catch(e){}
     layer.innerHTML='';S.co={extras:{},coupon:''};bk.conflict=!!conflict;
     go('confirm',{lastBooking:bk,a:null,b:null});
