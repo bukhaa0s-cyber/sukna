@@ -1,5 +1,23 @@
 {
- "updated": null,
+ "updated": "2026-10-19T08:08:31.374Z",
+ "status": {
+  "homey": {
+   "links": 0,
+   "ok": 0
+  },
+  "waha": {
+   "links": 0,
+   "ok": 0
+  },
+  "olive": {
+   "links": 0,
+   "ok": 0
+  },
+  "studio": {
+   "links": 0,
+   "ok": 0
+  }
+ },
  "blocked": {
   "homey": [],
   "waha": [],
