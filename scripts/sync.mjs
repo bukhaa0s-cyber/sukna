@@ -3,7 +3,10 @@
 //    each secret may hold several links separated by spaces or new lines: Airbnb, Booking.com, Gathern).
 //  - Exports the site's own direct bookings as ical/<unit>.ics so the platforms can import them.
 //  - Optionally refreshes nightly prices from PriceLabs when PRICELABS_API_KEY is set.
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+
+await mkdir('data', { recursive: true });
+await mkdir('ical', { recursive: true });
 
 const PROJECT = 'sukna-65778';
 const UNITS = {
