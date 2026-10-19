@@ -283,6 +283,8 @@ th{font-size:12px;color:var(--muted);font-weight:600}
 .paybtn.main{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .paybtn.pp{background:#FFC439;color:#111;border-color:#FFC439}
 .paybtn[disabled]{opacity:.45;cursor:not-allowed}
+.del-btn{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
+.del-box{display:grid;gap:10px;padding:14px;border:1px solid var(--danger);border-radius:12px;background:color-mix(in srgb,var(--danger) 8%,transparent)}
 .mobile-bar{display:none}
 @media (max-width:900px){
   .hero{grid-template-columns:1fr;gap:26px;padding-top:26px}
@@ -736,16 +738,32 @@ function oBookings(){
   if(OWNER_BOOKINGS===null)return '<div class="tbl"><div class="empty"><span class="spin" style="display:inline-block"></span> نحمّل الحجوزات…</div></div>';
   if(!OWNER_BOOKINGS.length)return '<div class="tbl"><div class="empty">ما فيه حجوزات مباشرة للحين. أول ما يحجز ضيف من الموقع بيظهر هنا، وتنقفل أيامه، ويطلع لك سجل قسمة جاهز.</div></div>';
   var list=OWNER_BOOKINGS.map(docToBk);
-  return '<div class="tbl"><table><thead><tr><th>رقم الحجز</th><th>الوحدة</th><th>الضيف</th><th>التواريخ</th><th>المبلغ</th><th>الدفع</th><th>واتساب</th><th>قسمة</th></tr></thead><tbody>'+
+  return '<div class="tbl"><table><thead><tr><th>رقم الحجز</th><th>الوحدة</th><th>الضيف</th><th>التواريخ</th><th>المبلغ</th><th>الدفع</th><th>واتساب</th><th>قسمة</th><th></th></tr></thead><tbody>'+
    list.map(function(b,i){var u=BY[b.unit]||UNITS[0];var mism=b.paidUsd!=null&&b.expectedUsd!=null&&Math.abs(b.paidUsd-b.expectedUsd)>0.5;
     var wa=MSGS.map(function(m){return '<a class="tiny-btn" style="text-decoration:none;display:inline-block;margin:2px 0" href="'+waTo(b.phone,fillTpl(b.lang==='en'?m.ten:m.tar,b))+'" target="_blank" rel="noopener">'+m.ar+'</a>'}).join(' ');
     return '<tr><td><span class="code">'+esc(b.code)+'</span><div class="url">'+(b.lang==='en'?'English':'عربي')+(b.mode==='sandbox'?' · تجربة':'')+'</div></td><td>'+u.name.ar+'</td><td>'+esc(b.name)+'<div class="url" dir="ltr">'+esc(b.phone)+'</div>'+(b.note?'<div class="url">'+esc(b.note)+'</div>':'')+'</td><td>'+fmtAr(b.a)+' – '+fmtAr(b.b)+'<div class="url">'+esc(b.eta)+'</div></td>'+
      '<td class="num">'+money(b.q.total)+' ر.س<div class="url">$'+(b.paidUsd!=null?Number(b.paidUsd).toFixed(2):usd(b.q.total))+'</div></td>'+
      '<td>'+(b.conflict?'<span class="pill sent">تعارض · رجّع المبلغ</span>':mism?'<span class="pill sent">المبلغ المدفوع غير مطابق</span>':'<span class="st on">● مدفوع</span>')+'<div class="url">'+tx(PM[b.pm])+'</div></td>'+
      '<td style="white-space:normal;min-width:150px">'+wa+'</td>'+
-     '<td><button class="tiny-btn" type="button" data-qrec="'+i+'">'+(S.qOpen[i]?'إخفاء':'سجل قسمة')+'</button></td></tr>'+
-     (S.qOpen[i]?'<tr><td colspan="8"><div class="qrec">'+esc(qismaRec(b))+'</div></td></tr>':'')}).join('')+'</tbody></table></div>'+
+     '<td><button class="tiny-btn" type="button" data-qrec="'+i+'">'+(S.qOpen[i]?'إخفاء':'سجل قسمة')+'</button></td>'+
+     '<td><button class="tiny-btn del-btn" type="button" data-delask="'+esc(b.code)+'">حذف</button></td></tr>'+
+     (S.delAsk===b.code?'<tr><td colspan="9"><div class="del-box"><div><b>حذف الحجز '+esc(b.code)+'؟</b><div class="muted" style="font-size:13px;white-space:normal">ينحذف الحجز وتنفتح لياليه ('+fmtAr(b.a)+' – '+fmtAr(b.b)+') للحجز من جديد، وتنشال من التقويمات المصدّرة للمنصات في المزامنة الجاية. '+(b.mode==='sandbox'?'هذا حجز تجريبي، ما فيه فلوس حقيقية.':'<b>المبلغ ما يرجع للضيف تلقائياً.</b> إذا تبغى ترجعه، سوّ الاسترداد من حسابك في PayPal.')+'</div></div>'+
+       '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" style="background:var(--danger);color:#fff" data-delgo="'+esc(b.code)+'">نعم، احذف الحجز</button><button class="btn ghost" type="button" data-delno="1">تراجع</button></div><p class="msg" id="delMsg" style="margin:0"></p></div></td></tr>':'')+
+     (S.qOpen[i]?'<tr><td colspan="9"><div class="qrec">'+esc(qismaRec(b))+'</div></td></tr>':'')}).join('')+'</tbody></table></div>'+
    '<p class="note" style="margin-top:8px">أزرار الواتساب تفتح محادثة مع الضيف والرسالة جاهزة بلغته، وأنت تضغط إرسال. رمز الدخول ترسله أنت يوم الوصول.</p>';
+}
+function deleteBooking(code,btn){
+  if(!S.owner||!db)return;
+  var msg=document.getElementById('delMsg');btn.disabled=true;btn.innerHTML='<span class="spin"></span> جاري الحذف…';
+  db.collection('blocks').where('code','==',code).get().then(function(snap){
+    var batch=db.batch();snap.forEach(function(doc){batch.delete(doc.ref)});
+    batch.delete(db.collection('bookings').doc(code));
+    return batch.commit();
+  }).then(function(){
+    S.delAsk=null;S.qOpen={};
+    OWNER_BOOKINGS=(OWNER_BOOKINGS||[]).filter(function(x){return x.code!==code});
+    render();
+  }).catch(function(e){btn.disabled=false;btn.textContent='نعم، احذف الحجز';if(msg)msg.textContent='ما انحذف: '+(e.code||e.message)});
 }
 function oMsgs(){
   return '<div class="stack"><p class="muted" style="margin:0">هذي نصوص الرسائل اللي تطلع في أزرار الواتساب لكل حجز. تعديلاتك تنحفظ في هذا المتصفح.</p>'+
@@ -980,6 +998,9 @@ document.addEventListener('click',function(e){
     return}
   if(d.otab){S.otab=d.otab;render();return}
   if(d.qrec!=null){S.qOpen[d.qrec]=!S.qOpen[d.qrec];render();return}
+  if(d.delask){S.delAsk=S.delAsk===d.delask?null:d.delask;render();return}
+  if(d.delno){S.delAsk=null;render();return}
+  if(d.delgo){deleteBooking(d.delgo,tg);return}
   if(d.inv){go('invoice',{inv:+d.inv});return}
   if(tg.id==='invPay'||tg.id==='invPay2'||tg.id==='invPay3'){tg.disabled=true;tg.innerHTML='<span class="spin"></span>';setTimeout(function(){invoices[S.inv].status='paid';render()},1200);return}
   if(tg.id==='dateBtn'){openPicker();return}
